@@ -16,7 +16,7 @@ targets: [
     .target(
         // ..
         dependencies: [
-            .product(name: "swift-peer-tunnel", package: "PeerTunnel")
+            .product(name: "PeerTunnel", package: "swift-peer-tunnel")
         ]
     )
 ]
@@ -48,7 +48,7 @@ On the other side, we try to find the service and connect to it.
 
 ```swift
 /// `HelloPeerMessageKind` needs to be declared here as well and it has to match the 
-/// declaration on the clamant's side. You can do this by sharing it via a framework. 
+/// declaration on the clamant's side.
 enum HelloPeerMessageKind: UInt32, PeerMessageKindProtocol {
     case hello
 }
@@ -69,6 +69,6 @@ for await message in connectionB.messages.values {
 
 ## Security
 
-`PeerTunnel` generates a pre-shared key from the provided password using the `TLS_AES_128_GCM_SHA256` cipher suite. `Network.framework` handles all the lower-level encrypting/decrypting functionality following the industry standards.
+`PeerTunnel` generates a pre-shared key from the provided password using the `TLS_AES_128_GCM_SHA256` cipher suite. `Network.framework` handles all the lower-level encrypting/decrypting functionality following industry standards.
 
 If you plan to use `PeerTunnel` for security-critical applications, we recommend auditing the code first.
