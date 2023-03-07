@@ -30,7 +30,7 @@ public actor PeerClamant<PeerMessageKind> where PeerMessageKind: PeerMessageKind
     }
 
     public func listen() {
-        if _listener.state != .setup {
+        if _listener.state != .setup && _listener.state != .cancelled {
             return
         }
 
@@ -71,6 +71,10 @@ public actor PeerClamant<PeerMessageKind> where PeerMessageKind: PeerMessageKind
 
         throw PeerClamantError.failedToConnect
     }
+    
+    public func cancel() {
+        _listener.cancel()
+    }
 
     private func _listenerStateUpdateHandler(newState: NWListener.State) {
         switch newState {
@@ -81,6 +85,7 @@ public actor PeerClamant<PeerMessageKind> where PeerMessageKind: PeerMessageKind
             _logger.fault("Listener failed with \(error), stopping")
             assertionFailure(error.debugDescription)
             _listener.cancel()
+        case .cancelled:
             _connectionPublisher.send(nil)
         default:
             break

@@ -31,7 +31,7 @@ public actor PeerSuppliant<PeerMessageKind> where PeerMessageKind: PeerMessageKi
     }
 
     public func discover() {
-        if _browser.state != .setup {
+        if _browser.state != .setup && _browser.state != .cancelled {
             return
         }
 
@@ -72,16 +72,21 @@ public actor PeerSuppliant<PeerMessageKind> where PeerMessageKind: PeerMessageKi
 
         throw PeerSuppliantError.failedToConnect
     }
+    
+    public func cancel() {
+        _browser.cancel()
+    }
 
     private func _browserStateUpdateHandler(newState: NWBrowser.State) {
         switch newState {
         case let .failed(error):
             _logger.fault("Peer browser failed with \(error), stopping")
             assertionFailure(error.debugDescription)
-            _connectionPublisher.send(nil)
             _browser.cancel()
         case .ready:
             _refreshResults()
+        case .cancelled:
+            _connectionPublisher.send(nil)
         default:
             break
         }
