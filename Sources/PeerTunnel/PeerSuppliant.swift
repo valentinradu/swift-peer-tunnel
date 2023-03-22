@@ -64,6 +64,7 @@ public actor PeerSuppliant<PeerMessageKind> where PeerMessageKind: PeerMessageKi
 
         for try await connection in timeoutPublisher.values {
             if let connection {
+                await connection.waitUntilReady()
                 return connection
             } else {
                 throw PeerSuppliantError.failedToConnect

@@ -54,6 +54,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
     private let _logger: Logger = .init(subsystem: "com.peertunnel.framework", category: "peer-connection")
     private let _connection: NWConnection
     private let _messages: PassthroughSubject<PeerMessage<PeerMessageKind>, Never>
+    private let _state: PassthroughSubject<NWConnection.State, Never>
 
     init(to endpoint: NWEndpoint, password: String) {
         let password = password.data(using: .utf8)!
@@ -61,6 +62,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
         let connection = NWConnection(to: endpoint, using: parameters)
         _connection = connection
         _messages = PassthroughSubject()
+        _state = PassthroughSubject()
 
         connection.stateUpdateHandler = { [weak self] newState in
             guard let self else { return }
@@ -72,6 +74,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
 
     init(wrapping connection: NWConnection) {
         _messages = PassthroughSubject()
+        _state = PassthroughSubject()
         _connection = connection
         _connection.stateUpdateHandler = { [weak self] newState in
             guard let self else { return }
@@ -82,6 +85,14 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
 
     deinit {
         _connection.cancel()
+    }
+
+    public func waitUntilReady() async {
+        for await message in _state.values {
+            if message == .ready {
+                return
+            }
+        }
     }
 
     public func send(messageKind: PeerMessageKind, data: Data) {
@@ -121,6 +132,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
 
     private func _connectionStateUpdateHandler(newState: NWConnection.State) {
         let connectionDebugDescription = _connection.debugDescription
+        _state.send(newState)
         switch newState {
         case .ready:
             _logger.info("\(connectionDebugDescription) established")

@@ -63,6 +63,7 @@ public actor PeerClamant<PeerMessageKind> where PeerMessageKind: PeerMessageKind
 
         for try await connection in timeoutPublisher.values {
             if let connection {
+                await connection.waitUntilReady()
                 return connection
             } else {
                 throw PeerClamantError.failedToConnect
