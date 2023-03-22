@@ -54,7 +54,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
     private let _logger: Logger = .init(subsystem: "com.peertunnel.framework", category: "peer-connection")
     private let _connection: NWConnection
     private let _messages: PassthroughSubject<PeerMessage<PeerMessageKind>, Never>
-    private let _state: PassthroughSubject<NWConnection.State, Never>
+    private let _state: CurrentValueSubject<NWConnection.State, Never>
 
     init(to endpoint: NWEndpoint, password: String) {
         let password = password.data(using: .utf8)!
@@ -62,7 +62,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
         let connection = NWConnection(to: endpoint, using: parameters)
         _connection = connection
         _messages = PassthroughSubject()
-        _state = PassthroughSubject()
+        _state = CurrentValueSubject(connection.state)
 
         connection.stateUpdateHandler = { [weak self] newState in
             guard let self else { return }
@@ -74,7 +74,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
 
     init(wrapping connection: NWConnection) {
         _messages = PassthroughSubject()
-        _state = PassthroughSubject()
+        _state = CurrentValueSubject(connection.state)
         _connection = connection
         _connection.stateUpdateHandler = { [weak self] newState in
             guard let self else { return }
@@ -88,6 +88,9 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
     }
 
     public func waitUntilReady() async {
+        if _state.value == .ready {
+            return
+        }
         for await message in _state.values {
             if message == .ready {
                 return
@@ -97,7 +100,7 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
 
     public func send(messageKind: PeerMessageKind, data: Data) {
         let message = NWProtocolFramer.Message(kind: messageKind.rawValue)
-        let context = NWConnection.ContentContext(identifier: "peertunnel.connection.messasge",
+        let context = NWConnection.ContentContext(identifier: "peertunnel.connection.message",
                                                   metadata: [message])
 
         _connection.send(
