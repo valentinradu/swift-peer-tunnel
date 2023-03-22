@@ -116,13 +116,36 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
         _connection.receiveMessage { [weak self] content, context, isComplete, error in
             guard let self else { return }
 
-            if let context,
-               let metadata = context.protocolMetadata(definition: PeerMessageDefinition.definition),
-               let message = metadata as? NWProtocolFramer.Message,
-               let kind = PeerMessageKind(rawValue: message.kind),
-               let content {
-                self._messages.send(.init(kind: kind, data: content))
+            guard let context else {
+                self._logger.debug("Received message with nil context")
+                return
             }
+
+            guard let metadata = context.protocolMetadata(definition: PeerMessageDefinition.definition) else {
+                self._logger.error("Received message with unexpected definition")
+                assertionFailure()
+                return
+            }
+
+            guard let message = metadata as? NWProtocolFramer.Message else {
+                self._logger.error("Received message with unexpected metadata")
+                assertionFailure()
+                return
+            }
+
+            guard let kind = PeerMessageKind(rawValue: message.kind) else {
+                self._logger.error("Received message with unexpected peer message kind")
+                assertionFailure()
+                return
+            }
+
+            guard let content else {
+                self._logger.error("Received message with invalid content")
+                assertionFailure()
+                return
+            }
+
+            self._messages.send(.init(kind: kind, data: content))
 
             if error == nil {
                 self._receiveNextMessage()
