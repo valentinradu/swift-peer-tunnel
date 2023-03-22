@@ -107,7 +107,13 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
             content: data,
             contentContext: context,
             isComplete: true,
-            completion: .idempotent
+            completion: .contentProcessed { [weak self] error in
+                guard let self else { return }
+                if let error {
+                    assertionFailure(error.debugDescription)
+                    self._logger.error("\(error.debugDescription)")
+                }
+            }
         )
     }
 
