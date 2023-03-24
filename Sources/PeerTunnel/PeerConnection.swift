@@ -126,13 +126,10 @@ public class PeerConnection<PeerMessageKind> where PeerMessageKind: PeerMessageK
             guard let self else { return }
 
             guard let context else {
-                self._logger.debug("Received message with nil context")
                 return
             }
 
             guard let metadata = context.protocolMetadata(definition: PeerMessageDefinition.definition) else {
-                self._logger.error("Received message with unexpected definition")
-                assertionFailure()
                 return
             }
 
